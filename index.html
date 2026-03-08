@@ -1,0 +1,997 @@
+!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<title>Budget Famille</title>
+
+<!-- ── PWA / iPhone ──────────────────────────────── -->
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Budget"/>
+<meta name="theme-color" content="#1c1b22"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+
+<!-- Icône iPhone (générée en canvas inline) -->
+<link rel="apple-touch-icon" id="pwa-icon" href=""/>
+
+<!-- Splash screens iPhone (fond foncé + logo centré) -->
+<style>
+  @media (device-width:390px) and (device-height:844px) and (-webkit-device-pixel-ratio:3){
+    body { background:#faf8f5 }
+  }
+</style>
+
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+
+<style>
+:root {
+  --rose:#ffd6d6; --rose2:#ffb3b3;
+  --mint:#d4f5e9; --mint2:#a8ebd3;
+  --sky:#d6eaff;  --sky2:#a8cfff;
+  --lemon:#fef9c3; --lemon2:#fde68a;
+  --peach:#ffe8d0; --peach2:#ffc999;
+  --lavender:#e8e0ff; --lavender2:#c4b5fd;
+  --sage:#d8eedc; --sage2:#a7d4ae;
+  --ink:#1c1b22; --ink2:#4a4858; --ink3:#8e8ba0;
+  --paper:#faf8f5; --paper2:#f2efe9; --paper3:#e8e4db;
+  --white:#ffffff;
+  --r:20px; --r2:14px; --r3:10px;
+  /* safe areas iPhone */
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{
+  font-family:'Plus Jakarta Sans',sans-serif;
+  background:var(--paper);color:var(--ink);
+  min-height:100vh;overflow-x:hidden;
+  /* plein écran iPhone notch */
+  padding-top:var(--sat);
+  padding-bottom:var(--sab);
+}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-thumb{background:var(--paper3);border-radius:4px}
+
+/* ── SPLASH SCREEN ──────────────────────────────── */
+#splash{
+  position:fixed;inset:0;z-index:9999;
+  background:var(--ink);
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:16px;
+  transition:opacity .5s, visibility .5s;
+}
+#splash.hidden{opacity:0;visibility:hidden}
+#splash-logo{
+  width:88px;height:88px;border-radius:24px;
+  background:linear-gradient(135deg,var(--mint2),var(--lavender2));
+  display:flex;align-items:center;justify-content:center;
+  font-size:44px;
+  box-shadow:0 12px 40px rgba(0,0,0,.4);
+}
+#splash-name{
+  font-family:'Fraunces',serif;font-size:28px;font-weight:700;
+  color:white;letter-spacing:-.5px;
+}
+#splash-sub{
+  font-size:12px;color:rgba(255,255,255,.35);
+  letter-spacing:.8px;text-transform:uppercase;font-weight:500;
+}
+#splash-bar{
+  width:120px;height:3px;border-radius:3px;
+  background:rgba(255,255,255,.1);margin-top:8px;overflow:hidden;
+}
+#splash-bar-fill{
+  height:3px;border-radius:3px;
+  background:linear-gradient(90deg,var(--mint2),var(--lavender2));
+  width:0%;transition:width .8s ease;
+}
+
+/* ── HEADER ─────────────────────────────────────── */
+#header{
+  background:var(--white);
+  border-bottom:1px solid var(--paper3);
+  padding:0 18px;
+  position:sticky;top:0;z-index:300;
+  /* shadow subtile */
+  box-shadow:0 1px 0 var(--paper3);
+}
+#header-inner{
+  max-width:1120px;margin:0 auto;
+  display:flex;align-items:center;justify-content:space-between;
+  height:60px;
+}
+.brand{display:flex;align-items:center;gap:11px}
+.brand-blob{
+  width:38px;height:38px;border-radius:13px;
+  background:linear-gradient(135deg,var(--mint2),var(--lavender2));
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;flex-shrink:0;
+}
+.brand-name{
+  font-family:'Fraunces',serif;font-size:20px;font-weight:700;
+  color:var(--ink);letter-spacing:-.4px;
+}
+.brand-tag{font-size:10px;color:var(--ink3);letter-spacing:.6px;text-transform:uppercase;font-weight:500;margin-top:1px}
+
+/* Nav desktop */
+.nav-desktop{display:flex;gap:2px}
+.nav-btn{
+  background:transparent;border:none;color:var(--ink3);
+  padding:8px 16px;border-radius:30px;cursor:pointer;
+  font-size:13px;font-weight:600;font-family:'Plus Jakarta Sans',sans-serif;transition:all .18s;
+}
+.nav-btn:hover{background:var(--paper2);color:var(--ink2)}
+.nav-btn.active{background:var(--ink);color:white}
+
+/* ── BOTTOM NAV MOBILE ──────────────────────────── */
+#bottom-nav{
+  display:none;
+  position:fixed;bottom:0;left:0;right:0;z-index:300;
+  background:var(--white);
+  border-top:1px solid var(--paper3);
+  padding:8px 0;
+  padding-bottom:calc(8px + var(--sab));
+  box-shadow:0 -4px 20px rgba(0,0,0,.06);
+}
+.bnav-inner{display:flex;justify-content:space-around;max-width:480px;margin:0 auto}
+.bnav-btn{
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  background:none;border:none;cursor:pointer;
+  padding:6px 12px;border-radius:12px;transition:all .15s;
+  font-family:'Plus Jakarta Sans',sans-serif;
+}
+.bnav-icon{font-size:20px;line-height:1}
+.bnav-lbl{font-size:10px;font-weight:600;color:var(--ink3);letter-spacing:.2px}
+.bnav-btn.active .bnav-lbl{color:var(--ink)}
+.bnav-btn.active .bnav-icon{
+  background:var(--paper2);
+  padding:2px 10px;border-radius:20px;
+  font-size:18px;
+}
+
+/* ── MONTH STRIP ─────────────────────────────────── */
+#month-strip{
+  background:var(--white);border-bottom:1px solid var(--paper3);
+  padding:10px 18px;overflow-x:auto;
+  /* hide scrollbar on mobile */
+  -ms-overflow-style:none;scrollbar-width:none;
+}
+#month-strip::-webkit-scrollbar{display:none}
+#ms-inner{max-width:1120px;margin:0 auto;display:flex;gap:5px}
+.mb{
+  display:inline-flex;flex-direction:column;align-items:center;
+  background:transparent;border:1.5px solid var(--paper3);
+  color:var(--ink);padding:6px 12px;border-radius:var(--r3);
+  cursor:pointer;min-width:54px;transition:all .18s;
+  flex-shrink:0;font-family:'Plus Jakarta Sans',sans-serif;gap:2px;
+}
+.mb .mn{font-size:11px;font-weight:700;color:var(--ink2)}
+.mb .mv{font-size:9px;color:var(--ink3);font-family:'DM Mono',monospace}
+.mb.sel{background:var(--ink);border-color:var(--ink)}
+.mb.sel .mn{color:white}
+.mb.sel .mv{color:rgba(255,255,255,.4)}
+
+/* ── MAIN ───────────────────────────────────────── */
+#main{max-width:1120px;margin:0 auto;padding:20px 18px}
+.view{display:none;animation:fup .25s ease both}
+.view.active{display:block}
+@keyframes fup{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* ── SAVE BADGE ─────────────────────────────────── */
+#save-badge{
+  position:fixed;top:calc(var(--sat) + 68px);right:14px;z-index:200;
+  background:var(--mint);color:#166048;
+  font-size:11px;font-weight:700;padding:5px 12px;
+  border-radius:20px;border:1px solid var(--mint2);
+  opacity:0;transform:translateY(-6px);
+  transition:all .3s;pointer-events:none;
+  font-family:'Plus Jakarta Sans',sans-serif;
+}
+#save-badge.show{opacity:1;transform:translateY(0)}
+
+/* ── SUMMARY ROW ─────────────────────────────────── */
+.summary-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:18px}
+.sum-card{border-radius:var(--r);padding:20px 22px;position:relative;overflow:hidden;transition:transform .2s}
+.sum-card:active{transform:scale(.98)}
+.sum-label{font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;opacity:.6;margin-bottom:8px}
+.sum-val{font-family:'Fraunces',serif;font-size:36px;font-weight:600;letter-spacing:-1.5px;line-height:1}
+.sum-sub{font-size:11px;margin-top:7px;opacity:.5;font-family:'DM Mono',monospace}
+.sum-deco{position:absolute;right:-8px;bottom:-8px;font-size:70px;opacity:.1;line-height:1;pointer-events:none}
+.prog{height:4px;border-radius:4px;background:rgba(0,0,0,.1);margin-top:10px;overflow:hidden}
+.prog-fill{height:4px;border-radius:4px;transition:width .6s}
+
+/* ── SECTION LABEL ──────────────────────────────── */
+.slabel{
+  font-size:11px;font-weight:700;text-transform:uppercase;
+  letter-spacing:1px;color:var(--ink3);margin-bottom:12px;
+  display:flex;align-items:center;gap:8px;
+}
+.slabel::after{content:'';flex:1;height:1px;background:var(--paper3)}
+
+/* ── INCOME BAR ─────────────────────────────────── */
+.income-bar{
+  background:var(--mint);border-radius:var(--r);padding:16px 20px;
+  margin-bottom:18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+}
+.income-chip{display:flex;align-items:center;gap:10px}
+.income-chip-icon{
+  width:36px;height:36px;border-radius:11px;
+  background:var(--mint2);display:flex;align-items:center;justify-content:center;font-size:17px;
+}
+.income-chip-name{font-size:12px;font-weight:600;color:var(--ink2)}
+.income-chip-val{font-family:'Fraunces',serif;font-size:24px;font-weight:600;letter-spacing:-1px;color:var(--ink)}
+.go-btn{
+  margin-left:auto;background:var(--ink);color:white;border:none;
+  padding:9px 18px;border-radius:30px;font-size:12px;font-weight:600;
+  font-family:'Plus Jakarta Sans',sans-serif;cursor:pointer;
+}
+
+/* ── GROUP LIST ─────────────────────────────────── */
+.grp-list{display:flex;flex-direction:column;gap:9px;margin-bottom:18px}
+.grp-row{
+  background:var(--white);border-radius:var(--r2);border:1.5px solid var(--paper3);
+  padding:14px 18px;display:flex;align-items:center;gap:13px;cursor:pointer;transition:all .2s;
+}
+.grp-row:active{transform:scale(.99)}
+.grp-row-swatch{width:44px;height:44px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.grp-row-name{font-size:14px;font-weight:700;color:var(--ink);flex:1}
+.grp-row-sub{font-size:11px;color:var(--ink3);margin-top:2px;font-weight:500}
+.grp-row-right{text-align:right;flex-shrink:0}
+.grp-row-amt{font-family:'Fraunces',serif;font-size:20px;font-weight:600;letter-spacing:-.5px}
+.grp-row-pct{font-size:10px;color:var(--ink3);font-family:'DM Mono',monospace;margin-top:2px}
+.grp-bar{height:3px;border-radius:3px;background:var(--paper2);margin-top:8px;overflow:hidden}
+.grp-bar-fill{height:3px;border-radius:3px;transition:width .5s}
+
+/* ── PANEL ──────────────────────────────────────── */
+.panel{background:var(--white);border:1.5px solid var(--paper3);border-radius:var(--r);padding:18px 20px;margin-bottom:18px}
+.panel-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.add-btn{
+  background:var(--ink);color:white;border:none;
+  padding:7px 16px;border-radius:30px;cursor:pointer;
+  font-size:12px;font-weight:600;font-family:'Plus Jakarta Sans',sans-serif;
+}
+.rec-row{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--paper2)}
+.rec-row:last-child{border-bottom:none}
+.r-blob{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.r-name{font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.r-cat{font-size:10px;color:var(--ink3);margin-top:1px}
+.r-amt{font-size:13px;font-weight:700;flex-shrink:0;font-family:'DM Mono',monospace;color:var(--ink2)}
+
+/* ── PAGE HEADER ─────────────────────────────────── */
+.ph{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px}
+.ph-title{font-family:'Fraunces',serif;font-size:26px;font-weight:600;letter-spacing:-.5px}
+.ph-sub{font-size:11px;color:var(--ink3);margin-top:3px;font-family:'DM Mono',monospace}
+.btn-primary{
+  background:var(--ink);color:white;border:none;
+  padding:10px 20px;border-radius:30px;cursor:pointer;
+  font-size:12px;font-weight:600;font-family:'Plus Jakarta Sans',sans-serif;white-space:nowrap;
+}
+.btn-cancel{background:var(--paper2)!important;color:var(--ink2)!important}
+
+/* ── FORM ───────────────────────────────────────── */
+.form-box{
+  background:var(--white);border:1.5px solid var(--paper3);
+  border-radius:var(--r);padding:20px;margin-bottom:18px;
+}
+.f-label{font-size:10px;color:var(--ink3);display:block;margin-bottom:5px;font-weight:700;text-transform:uppercase;letter-spacing:.6px}
+.f-input{
+  width:100%;background:var(--paper);border:1.5px solid var(--paper3);
+  border-radius:var(--r3);padding:12px 14px;color:var(--ink);font-size:16px;
+  outline:none;font-family:'Plus Jakarta Sans',sans-serif;transition:border .15s;
+  /* évite le zoom iOS sur focus */
+}
+.f-input:focus{border-color:var(--ink)}
+.f-grid{display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:14px}
+.pill-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.pill{
+  border:1.5px solid var(--paper3);color:var(--ink2);padding:7px 14px;
+  border-radius:30px;cursor:pointer;font-size:12px;font-weight:600;
+  font-family:'Plus Jakarta Sans',sans-serif;transition:all .15s;background:transparent;
+}
+.pill.ap{background:var(--ink);color:white;border-color:var(--ink)}
+.tab-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.tab{
+  background:var(--paper2);border:1.5px solid var(--paper3);color:var(--ink3);
+  padding:7px 14px;border-radius:var(--r3);cursor:pointer;font-size:12px;font-weight:600;
+  font-family:'Plus Jakarta Sans',sans-serif;transition:all .15s;
+}
+.tab.at{background:var(--ink);border-color:var(--ink);color:white}
+.btn-sub{
+  width:100%;background:var(--ink);color:white;border:none;
+  padding:14px;border-radius:var(--r2);cursor:pointer;font-size:14px;font-weight:700;
+  font-family:'Plus Jakarta Sans',sans-serif;margin-top:4px;
+}
+
+/* ── FILTERS ─────────────────────────────────────── */
+.fbar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;overflow-x:auto;-ms-overflow-style:none;scrollbar-width:none}
+.fbar::-webkit-scrollbar{display:none}
+.fbtn{
+  border:1.5px solid var(--paper3);color:var(--ink2);padding:7px 14px;
+  border-radius:30px;cursor:pointer;font-size:12px;font-weight:600;
+  font-family:'Plus Jakarta Sans',sans-serif;background:var(--white);flex-shrink:0;
+}
+.fbtn.af{background:var(--ink);color:white;border-color:var(--ink)}
+.sfbar{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:14px;overflow-x:auto;-ms-overflow-style:none;scrollbar-width:none}
+.sfbar::-webkit-scrollbar{display:none}
+.sfbtn{
+  border:1.5px solid var(--paper3);color:var(--ink3);padding:5px 12px;
+  border-radius:30px;cursor:pointer;font-size:11px;font-weight:600;
+  font-family:'Plus Jakarta Sans',sans-serif;background:var(--white);flex-shrink:0;
+}
+.sfbtn.asf{background:var(--ink);color:white;border-color:var(--ink)}
+
+/* ── EXP ROW ─────────────────────────────────────── */
+.exp-list{display:flex;flex-direction:column;gap:5px}
+.exp-row{
+  display:flex;align-items:center;gap:12px;padding:12px 16px;
+  background:var(--white);border:1.5px solid var(--paper3);
+  border-radius:var(--r2);transition:all .15s;
+}
+.exp-row:active{background:var(--paper2)}
+.e-blob{width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.e-name{font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.e-cat{font-size:10px;color:var(--ink3);margin-top:2px;font-weight:600;text-transform:uppercase;letter-spacing:.3px}
+.e-amt{font-size:15px;font-weight:700;flex-shrink:0;margin-right:4px;font-family:'DM Mono',monospace;color:var(--ink2)}
+.btn-edit{background:var(--paper2);border:none;color:var(--ink3);width:30px;height:30px;border-radius:9px;cursor:pointer;font-size:13px}
+.btn-del{background:var(--rose);border:none;color:#c53030;width:30px;height:30px;border-radius:9px;cursor:pointer;font-size:13px}
+
+/* ── TOTAL BAR ───────────────────────────────────── */
+.tot-bar{
+  margin-top:14px;background:var(--ink);border-radius:var(--r2);
+  padding:14px 20px;display:flex;justify-content:space-between;align-items:center;
+}
+.tot-label{font-weight:600;color:rgba(255,255,255,.4);font-size:11px;text-transform:uppercase;letter-spacing:.6px}
+.tot-val{font-family:'Fraunces',serif;font-size:26px;font-weight:600;letter-spacing:-.8px;color:white}
+
+/* ── REVENUS PAGE ─────────────────────────────────── */
+.rev-hero{
+  border-radius:var(--r);padding:28px 28px;margin-bottom:18px;
+  background:var(--mint);display:flex;align-items:center;
+  justify-content:space-between;gap:20px;flex-wrap:wrap;
+}
+.rev-hero-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--ink2);opacity:.6;margin-bottom:5px}
+.rev-hero-val{font-family:'Fraunces',serif;font-size:46px;font-weight:600;letter-spacing:-2px;color:var(--ink)}
+.rev-hero-sub{font-size:11px;color:var(--ink3);margin-top:4px;font-family:'DM Mono',monospace}
+.rev-solde-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;opacity:.6;margin-bottom:4px;text-align:right;color:var(--ink2)}
+.rev-solde-val{font-family:'Fraunces',serif;font-size:32px;font-weight:600;letter-spacing:-1px;text-align:right}
+
+/* ── HISTORY ─────────────────────────────────────── */
+.chart-box{background:var(--white);border:1.5px solid var(--paper3);border-radius:var(--r);padding:20px;margin-bottom:18px}
+.chart-top{display:flex;justify-content:space-between;align-items:center}
+.chart-wrap{position:relative;height:200px;margin-top:14px}
+.chart-leg{display:flex;gap:12px}
+.cl{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--ink3)}
+.cl-dot{width:10px;height:10px;border-radius:3px}
+.hist-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(82px,1fr));gap:7px}
+.hcard{border:1.5px solid var(--paper3);border-radius:var(--r2);padding:12px;cursor:pointer;transition:all .2s;background:var(--white)}
+.hcard:active{transform:scale(.97)}
+.hcard.ach{background:var(--ink);border-color:var(--ink)}
+.hm{font-weight:700;font-size:10px;color:var(--ink3);margin-bottom:5px;letter-spacing:.5px;text-transform:uppercase}
+.ach .hm{color:rgba(255,255,255,.4)}
+.ha{font-family:'DM Mono',monospace;font-size:11px;font-weight:500;color:var(--ink)}
+.ach .ha{color:white}
+.hb{font-size:9px;font-weight:700;margin-top:3px;font-family:'DM Mono',monospace}
+
+/* ── EMPTY ───────────────────────────────────────── */
+.empty{text-align:center;color:var(--ink3);padding:44px 0;font-size:13px;background:var(--white);border:1.5px dashed var(--paper3);border-radius:var(--r2)}
+
+/* ── NOTIFY ──────────────────────────────────────── */
+#notify{
+  position:fixed;bottom:calc(80px + var(--sab));right:16px;
+  background:var(--ink);color:white;padding:11px 20px;border-radius:30px;
+  font-weight:600;font-size:12px;font-family:'Plus Jakarta Sans',sans-serif;
+  z-index:999;opacity:0;transform:translateY(10px);
+  transition:all .3s;pointer-events:none;
+  box-shadow:0 6px 20px rgba(0,0,0,.2);
+}
+#notify.show{opacity:1;transform:translateY(0)}
+
+/* ── MOBILE PADDING ──────────────────────────────── */
+@media(max-width:640px){
+  #main{ padding-bottom: calc(80px + var(--sab)) }
+  .nav-desktop{ display:none }
+  #bottom-nav{ display:block }
+  .summary-row{ grid-template-columns:1fr 1fr }
+  .summary-row .sum-card:last-child{ grid-column:span 2 }
+  .sum-val{ font-size:28px }
+  .f-grid{ grid-template-columns:1fr }
+  .rev-hero{ flex-direction:column;align-items:flex-start }
+  .rev-solde-lbl,.rev-solde-val{ text-align:left }
+  .ph-title{ font-size:22px }
+  .brand-tag{ display:none }
+}
+@media(min-width:641px){
+  #bottom-nav{ display:none !important }
+}
+</style>
+</head>
+<body>
+
+<!-- SPLASH SCREEN -->
+<div id="splash">
+  <div id="splash-logo">🏡</div>
+  <div id="splash-name">Budget Famille</div>
+  <div id="splash-sub">Chargement…</div>
+  <div id="splash-bar"><div id="splash-bar-fill"></div></div>
+</div>
+
+<!-- SAVE BADGE -->
+<div id="save-badge">💾 Sauvegardé</div>
+
+<!-- HEADER -->
+<div id="header">
+  <div id="header-inner">
+    <div class="brand">
+      <div class="brand-blob">🏡</div>
+      <div>
+        <div class="brand-name">Budget Famille</div>
+        <div class="brand-tag">Suivi mensuel · 3 enfants</div>
+      </div>
+    </div>
+    <nav class="nav-desktop">
+      <button class="nav-btn active" onclick="showView('dashboard')">Tableau</button>
+      <button class="nav-btn" onclick="showView('charges')">Charges</button>
+      <button class="nav-btn" onclick="showView('revenus')">Revenus</button>
+      <button class="nav-btn" onclick="showView('historique')">Historique</button>
+    </nav>
+  </div>
+</div>
+
+<!-- MONTH STRIP -->
+<div id="month-strip"><div id="ms-inner"></div></div>
+
+<!-- MAIN -->
+<div id="main">
+
+  <!-- DASHBOARD -->
+  <div id="view-dashboard" class="view active">
+    <div class="summary-row">
+      <div class="sum-card" style="background:var(--mint)">
+        <div class="sum-label">💰 Revenus</div>
+        <div class="sum-val" id="h-rev"></div>
+        <div class="sum-sub" id="h-rev-sub"></div>
+        <div class="sum-deco">💼</div>
+      </div>
+      <div class="sum-card" style="background:var(--rose)">
+        <div class="sum-label">📉 Dépenses</div>
+        <div class="sum-val" id="h-dep"></div>
+        <div class="prog"><div class="prog-fill" id="h-bar" style="background:rgba(0,0,0,.2)"></div></div>
+        <div class="sum-sub" id="h-pct"></div>
+        <div class="sum-deco">🧾</div>
+      </div>
+      <div class="sum-card" id="h-bal-tile" style="background:var(--sky)">
+        <div class="sum-label" id="h-bal-label">✅ Solde</div>
+        <div class="sum-val" id="h-bal"></div>
+        <div class="sum-sub" id="h-month"></div>
+        <div class="sum-deco" id="h-bal-deco">✨</div>
+      </div>
+    </div>
+
+    <div class="income-bar">
+      <div class="income-chip">
+        <div class="income-chip-icon">💼</div>
+        <div>
+          <div class="income-chip-name">Salaire mensuel</div>
+          <div class="income-chip-val" id="d-salary"></div>
+        </div>
+      </div>
+      <button class="go-btn" onclick="showView('revenus')">Modifier →</button>
+    </div>
+
+    <div class="slabel">Dépenses par groupe</div>
+    <div class="grp-list" id="d-grp-list"></div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <div class="slabel" style="margin:0">Dernières charges</div>
+        <button class="add-btn" onclick="showView('charges');openExpForm()">+ Ajouter</button>
+      </div>
+      <div id="d-recent"></div>
+    </div>
+  </div>
+
+  <!-- CHARGES -->
+  <div id="view-charges" class="view">
+    <div class="ph">
+      <div>
+        <div class="ph-title">Charges <span style="color:var(--ink3)">—</span> <span id="c-month"></span></div>
+        <div class="ph-sub" id="c-sub"></div>
+      </div>
+      <button class="btn-primary" id="btn-tef" onclick="toggleExpForm()">+ Ajouter</button>
+    </div>
+    <div id="exp-form-box" class="form-box" style="display:none">
+      <div class="slabel" id="ef-title" style="margin-bottom:14px">Nouvelle charge</div>
+      <div class="tab-row" id="ef-gtabs"></div>
+      <div class="pill-row" id="ef-cpills"></div>
+      <div class="f-grid">
+        <div><label class="f-label">Description</label><input class="f-input" id="ef-label" placeholder="Ex: Loyer" onkeydown="if(event.key==='Enter')saveExp()"/></div>
+        <div><label class="f-label">Montant (€)</label><input class="f-input" id="ef-amt" type="number" min="0" placeholder="0" inputmode="decimal" onkeydown="if(event.key==='Enter')saveExp()"/></div>
+      </div>
+      <button class="btn-sub" onclick="saveExp()" id="ef-submit-btn">Ajouter la charge</button>
+    </div>
+    <div class="fbar" id="gfbar"></div>
+    <div class="sfbar" id="cfbar"></div>
+    <div class="exp-list" id="exp-list"></div>
+    <div class="tot-bar" id="exp-tot" style="display:none">
+      <span class="tot-label">Total <span id="et-mname"></span></span>
+      <span class="tot-val" id="et-val"></span>
+    </div>
+  </div>
+
+  <!-- REVENUS -->
+  <div id="view-revenus" class="view">
+    <div class="ph">
+      <div>
+        <div class="ph-title">Revenus <span style="color:var(--ink3)">—</span> <span id="r-month"></span></div>
+        <div class="ph-sub" id="r-sub"></div>
+      </div>
+      <button class="btn-primary" id="btn-tif" onclick="toggleIncForm()">✏️ Modifier</button>
+    </div>
+    <div class="rev-hero">
+      <div>
+        <div class="rev-hero-lbl">Salaire mensuel</div>
+        <div class="rev-hero-val" id="rev-val"></div>
+        <div class="rev-hero-sub" id="rev-sub2"></div>
+      </div>
+      <div>
+        <div class="rev-solde-lbl">Solde ce mois</div>
+        <div class="rev-solde-val" id="rev-solde"></div>
+      </div>
+    </div>
+    <div id="inc-form-box" class="form-box" style="display:none">
+      <div class="slabel" style="margin-bottom:14px">Modifier le salaire</div>
+      <div style="max-width:220px;margin-bottom:14px">
+        <label class="f-label">Montant mensuel (€)</label>
+        <input class="f-input" id="if-amt" type="number" min="0" placeholder="2250" inputmode="decimal" onkeydown="if(event.key==='Enter')saveInc()"/>
+      </div>
+      <button class="btn-sub" onclick="saveInc()" style="max-width:200px">Enregistrer</button>
+    </div>
+    <div class="exp-list" id="inc-list"></div>
+  </div>
+
+  <!-- HISTORIQUE -->
+  <div id="view-historique" class="view">
+    <div class="ph-title" style="margin-bottom:20px">Historique <span id="hist-year" style="color:var(--ink3);font-weight:400;font-size:20px"></span></div>
+    <div class="chart-box">
+      <div class="chart-top">
+        <div class="slabel" style="margin:0">Revenus vs Dépenses</div>
+        <div class="chart-leg">
+          <div class="cl"><div class="cl-dot" style="background:var(--mint2)"></div>Revenus</div>
+          <div class="cl"><div class="cl-dot" style="background:var(--rose2)"></div>Charges</div>
+        </div>
+      </div>
+      <div class="chart-wrap"><canvas id="bar-canvas"></canvas></div>
+    </div>
+    <div class="hist-grid" id="hist-grid"></div>
+  </div>
+
+</div>
+
+<!-- BOTTOM NAV MOBILE -->
+<div id="bottom-nav">
+  <div class="bnav-inner">
+    <button class="bnav-btn active" onclick="showView('dashboard')"><span class="bnav-icon">🏠</span><span class="bnav-lbl">Tableau</span></button>
+    <button class="bnav-btn" onclick="showView('charges')"><span class="bnav-icon">📋</span><span class="bnav-lbl">Charges</span></button>
+    <button class="bnav-btn" onclick="showView('revenus')"><span class="bnav-icon">💰</span><span class="bnav-lbl">Revenus</span></button>
+    <button class="bnav-btn" onclick="showView('historique')"><span class="bnav-icon">📈</span><span class="bnav-lbl">Historique</span></button>
+  </div>
+</div>
+
+<div id="notify"></div>
+
+<script>
+// ═══════════════════════════════════════════
+//  DONNÉES & GROUPES
+// ═══════════════════════════════════════════
+const GROUPS = [
+  {id:'logement',   label:'Logement',         icon:'🏠', pastel:'var(--sky)',      pastel2:'var(--sky2)',      categories:[
+    {id:'loyer',      label:'Loyer',           icon:'🏠', bg:'var(--sky)',     color:'#1a6fa8'},
+    {id:'loyer_cave', label:'Cave',            icon:'🗝️', bg:'var(--sky)',     color:'#1a6fa8'},
+    {id:'edf',        label:'EDF',             icon:'⚡', bg:'var(--lemon)',   color:'#92600a'},
+    {id:'eau',        label:'Eau',             icon:'💧', bg:'var(--sky)',     color:'#1a6fa8'},
+  ]},
+  {id:'telecom',    label:'Télécom',           icon:'📡', pastel:'var(--mint)',     pastel2:'var(--mint2)',     categories:[
+    {id:'free1',      label:'Free Mobile 1',   icon:'📲', bg:'var(--mint)',    color:'#166048'},
+    {id:'free2',      label:'Free Mobile 2',   icon:'📲', bg:'var(--mint)',    color:'#166048'},
+    {id:'box',        label:'Box + Netflix',   icon:'🌐', bg:'var(--mint)',    color:'#166048'},
+  ]},
+  {id:'assurances', label:'Assurances',        icon:'🛡️', pastel:'var(--lavender)', pastel2:'var(--lavender2)', categories:[
+    {id:'allianz1',   label:'Allianz Auto',    icon:'🚗', bg:'var(--lavender)','color':'#5b21b6'},
+    {id:'allianz2',   label:'Allianz',         icon:'📋', bg:'var(--lavender)','color':'#5b21b6'},
+    {id:'allianz3',   label:'Allianz Hab.',    icon:'🏡', bg:'var(--lavender)','color':'#5b21b6'},
+  ]},
+  {id:'vie',        label:'Vie quotidienne',   icon:'🛒', pastel:'var(--peach)',    pastel2:'var(--peach2)',    categories:[
+    {id:'courses',    label:'Courses',         icon:'🛒', bg:'var(--peach)',   color:'#9a3412'},
+    {id:'bebes',      label:'Bébés',           icon:'👶', bg:'var(--rose)',    color:'#9f1239'},
+    {id:'cantine',    label:'Cantine Orya',    icon:'🍽️', bg:'var(--lemon)',   color:'#92600a'},
+  ]},
+  {id:'epargne',    label:'Épargne',           icon:'🐷', pastel:'var(--rose)',     pastel2:'var(--rose2)',     categories:[
+    {id:'ep_orya',    label:'Épargne Orya',    icon:'🧒', bg:'var(--rose)',    color:'#9f1239'},
+    {id:'ep_rokhaya', label:'Épargne Rokhaya', icon:'🧒', bg:'var(--rose)',    color:'#9f1239'},
+    {id:'ep_saliou',  label:'Épargne Saliou',  icon:'🧒', bg:'var(--rose)',    color:'#9f1239'},
+  ]},
+  {id:'variable',   label:'Variable / Dettes', icon:'💸', pastel:'var(--sage)',     pastel2:'var(--sage2)',     categories:[
+    {id:'amazon4x',   label:'Amazon 4x',       icon:'📦', bg:'var(--sage)',    color:'#14532d'},
+    {id:'shein3x',    label:'Shein 3x',        icon:'👗', bg:'var(--rose)',    color:'#9f1239'},
+    {id:'autre',      label:'Autre',           icon:'❓', bg:'var(--paper2)', color:'var(--ink2)'},
+    {id:'dette',      label:'Dette',           icon:'💳', bg:'var(--rose)',    color:'#9f1239'},
+  ]},
+];
+const ALL_CATS = GROUPS.flatMap(g => g.categories);
+const getCat = id => ALL_CATS.find(c => c.id === id) || {label:'?',icon:'?',bg:'var(--paper2)',color:'var(--ink2)'};
+const getGrp = id => GROUPS.find(g => g.id === id);
+
+const MONTHS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+const MSHORT = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+const now = new Date(), CY = now.getFullYear();
+let selM = now.getMonth();
+
+// ═══════════════════════════════════════════
+//  DONNÉES PAR DÉFAUT
+// ═══════════════════════════════════════════
+function defaultData() {
+  const expenses = [], incomes = []; let eid = 1, iid = 1;
+  const fixed = [
+    {label:'Loyer',         category:'loyer',     amount:890},
+    {label:'Cave',          category:'loyer_cave',amount:34},
+    {label:'EDF',           category:'edf',       amount:67},
+    {label:'Eau',           category:'eau',       amount:24},
+    {label:'Free Mobile 1', category:'free1',     amount:23},
+    {label:'Free Mobile 2', category:'free2',     amount:24},
+    {label:'Box + Netflix', category:'box',       amount:45},
+    {label:'Allianz Auto',  category:'allianz1',  amount:115},
+    {label:'Allianz',       category:'allianz2',  amount:10},
+    {label:'Allianz Hab.',  category:'allianz3',  amount:20},
+    {label:'Cantine Orya',  category:'cantine',   amount:35},
+    {label:'Épargne Orya',  category:'ep_orya',   amount:50},
+    {label:'Courses',       category:'courses',   amount:300},
+    {label:'Bébés',         category:'bebes',     amount:200},
+  ];
+  for (let m = 0; m < 12; m++) {
+    fixed.forEach(e => expenses.push({id:eid++,...e,month:m,year:CY}));
+    incomes.push({id:iid++,source:'salaire',amount:2250,month:m,year:CY});
+  }
+  return {expenses, incomes, nextId: Math.max(eid,iid)+10};
+}
+
+// ═══════════════════════════════════════════
+//  PERSISTANCE localStorage
+// ═══════════════════════════════════════════
+const STORAGE_KEY = 'budget_famille_v1';
+
+function saveToStorage() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      expenses, incomes, nextId, savedAt: Date.now()
+    }));
+    showSaveBadge();
+  } catch(e) { console.warn('localStorage indisponible', e) }
+}
+
+function loadFromStorage() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    // vérification basique
+    if (Array.isArray(data.expenses) && Array.isArray(data.incomes)) return data;
+  } catch(e) { console.warn('Erreur lecture localStorage', e) }
+  return null;
+}
+
+function showSaveBadge() {
+  const b = document.getElementById('save-badge');
+  b.classList.add('show');
+  setTimeout(() => b.classList.remove('show'), 1800);
+}
+
+// Chargement initial
+const saved = loadFromStorage();
+let { expenses, incomes, nextId } = saved || defaultData();
+
+// ═══════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════
+const fmt = n => n.toLocaleString('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:0});
+const mExp = (m,y) => expenses.filter(e => e.month===m && e.year===y);
+const mInc = (m,y) => incomes.filter(i => i.month===m && i.year===y);
+const tExp = (m,y) => mExp(m,y).reduce((s,e) => s+e.amount, 0);
+const tInc = (m,y) => mInc(m,y).reduce((s,i) => s+i.amount, 0);
+function byCat(m,y){const r={};ALL_CATS.forEach(c=>r[c.id]=0);mExp(m,y).forEach(e=>{r[e.category]=(r[e.category]||0)+e.amount});return r}
+function byGrp(m,y){const bc=byCat(m,y),r={};GROUPS.forEach(g=>{r[g.id]=g.categories.reduce((s,c)=>s+bc[c.id],0)});return r}
+
+function notify(msg){const n=document.getElementById('notify');n.textContent=msg;n.classList.add('show');setTimeout(()=>n.classList.remove('show'),2200)}
+
+// ═══════════════════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════════════════
+let curView = 'dashboard', editEid = null;
+let selGrp = null, selCatF = null, selExpCat = 'loyer';
+let efOpen = false, ifOpen = false;
+
+function showView(v) {
+  curView = v;
+  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+  document.getElementById('view-'+v).classList.add('active');
+  // desktop nav
+  document.querySelectorAll('.nav-btn').forEach((b,i) =>
+    b.classList.toggle('active', ['dashboard','charges','revenus','historique'][i]===v));
+  // bottom nav mobile
+  document.querySelectorAll('.bnav-btn').forEach((b,i) =>
+    b.classList.toggle('active', ['dashboard','charges','revenus','historique'][i]===v));
+  render();
+}
+
+function renderMS() {
+  const el = document.getElementById('ms-inner'); el.innerHTML = '';
+  MSHORT.forEach((m,i) => {
+    const t = tExp(i,CY);
+    const b = document.createElement('button'); b.className = 'mb'+(i===selM?' sel':'');
+    b.innerHTML = `<span class="mn">${m}</span>${t>0?`<span class="mv">${fmt(t)}</span>`:''}`;
+    b.onclick = () => { selM=i; renderMS(); render() };
+    el.appendChild(b);
+  });
+  // scroll to selected month
+  setTimeout(() => {
+    const sel = document.querySelector('.mb.sel');
+    if (sel) sel.scrollIntoView({block:'nearest',inline:'center'});
+  }, 50);
+}
+
+function render() {
+  if(curView==='dashboard')  renderDash();
+  if(curView==='charges')    renderCharges();
+  if(curView==='revenus')    renderRevenus();
+  if(curView==='historique') renderHist();
+}
+
+// ═══════════════════════════════════════════
+//  DASHBOARD
+// ═══════════════════════════════════════════
+function renderDash() {
+  const m=selM, y=CY, ti=tInc(m,y), te=tExp(m,y), bal=ti-te;
+  const bgv=byGrp(m,y), bc=byCat(m,y);
+  const pct=ti>0?Math.min(100,Math.round(te/ti*100)):0;
+
+  document.getElementById('h-rev').textContent  = fmt(ti);
+  document.getElementById('h-rev-sub').textContent = 'salaire · '+MONTHS[m];
+  document.getElementById('h-dep').textContent  = fmt(te);
+  document.getElementById('h-bar').style.width  = pct+'%';
+  document.getElementById('h-pct').textContent  = ti>0?pct+'% des revenus':'—';
+  document.getElementById('h-bal').textContent  = fmt(bal);
+  document.getElementById('h-month').textContent = MONTHS[m]+' '+CY;
+  document.getElementById('h-bal-label').textContent = (bal>=0?'✅':'⚠️')+' Solde';
+  const bt = document.getElementById('h-bal-tile');
+  bt.style.background = bal>=0?'var(--mint)':'var(--rose)';
+  document.getElementById('h-bal-deco').textContent = bal>=0?'✨':'⚠️';
+  document.getElementById('d-salary').textContent = fmt(ti);
+
+  // Group list
+  const gl = document.getElementById('d-grp-list'); gl.innerHTML = '';
+  GROUPS.forEach(g => {
+    const v=bgv[g.id]||0, p=te>0?Math.round(v/te*100):0;
+    const nA=g.categories.filter(c=>bc[c.id]>0).length;
+    const row = document.createElement('div'); row.className = 'grp-row';
+    row.onclick = () => { showView('charges'); selGrp=g.id; selCatF=null; renderCharges() };
+    row.innerHTML = `
+      <div class="grp-row-swatch" style="background:${g.pastel}">${g.icon}</div>
+      <div style="flex:1;min-width:0">
+        <div class="grp-row-name">${g.label}</div>
+        <div class="grp-row-sub">${nA} poste${nA!==1?'s':''} renseigné${nA!==1?'s':''}</div>
+        <div class="grp-bar"><div class="grp-bar-fill" style="width:${p}%;background:${g.pastel2}"></div></div>
+      </div>
+      <div class="grp-row-right">
+        <div class="grp-row-amt">${fmt(v)}</div>
+        <div class="grp-row-pct">${p}%</div>
+      </div>`;
+    gl.appendChild(row);
+  });
+
+  // Recent
+  const rl = document.getElementById('d-recent'); rl.innerHTML = '';
+  const exps = mExp(m,y);
+  if (!exps.length) { rl.innerHTML='<div style="color:var(--ink3);text-align:center;padding:14px 0;font-size:13px">Aucune charge ce mois 🙂</div>'; return }
+  exps.slice().reverse().slice(0,8).forEach(e => {
+    const c = getCat(e.category);
+    const row = document.createElement('div'); row.className = 'rec-row';
+    row.innerHTML = `<div class="r-blob" style="background:${c.bg}">${c.icon}</div><div style="flex:1;min-width:0"><div class="r-name">${e.label}</div><div class="r-cat">${c.label}</div></div><div class="r-amt">${fmt(e.amount)}</div>`;
+    rl.appendChild(row);
+  });
+  if (exps.length > 8) {
+    const more = document.createElement('div');
+    more.style.cssText='text-align:center;color:var(--ink3);font-size:12px;margin-top:12px;cursor:pointer;font-weight:600';
+    more.textContent = `Voir tout (${exps.length}) →`;
+    more.onclick = () => showView('charges');
+    rl.appendChild(more);
+  }
+}
+
+// ═══════════════════════════════════════════
+//  CHARGES
+// ═══════════════════════════════════════════
+function buildEfGtabs(){
+  const el=document.getElementById('ef-gtabs');el.innerHTML='';
+  GROUPS.forEach(g=>{const b=document.createElement('button');b.className='tab'+(selGrp===g.id?' at':'');b.textContent=g.icon+' '+g.label;b.onclick=()=>{selGrp=g.id;selExpCat=g.categories[0].id;buildEfGtabs();buildEfCpills()};el.appendChild(b)});
+}
+function buildEfCpills(){
+  const el=document.getElementById('ef-cpills');el.innerHTML='';
+  const grp=getGrp(selGrp)||GROUPS[0];
+  grp.categories.forEach(c=>{const b=document.createElement('button');b.className='pill'+(selExpCat===c.id?' ap':'');b.textContent=c.icon+' '+c.label;b.onclick=()=>{selExpCat=c.id;buildEfCpills()};el.appendChild(b)});
+}
+function openExpForm(id){
+  efOpen=true;editEid=id||null;
+  document.getElementById('exp-form-box').style.display='block';
+  document.getElementById('btn-tef').textContent='✕ Annuler';document.getElementById('btn-tef').classList.add('btn-cancel');
+  if(editEid!==null){
+    const e=expenses.find(x=>x.id===editEid);
+    document.getElementById('ef-label').value=e.label;document.getElementById('ef-amt').value=e.amount;
+    const g=GROUPS.find(g=>g.categories.some(c=>c.id===e.category));
+    selGrp=g?g.id:GROUPS[0].id;selExpCat=e.category;
+    document.getElementById('ef-title').textContent='Modifier la charge';
+    document.getElementById('ef-submit-btn').textContent='Enregistrer';
+  } else {
+    document.getElementById('ef-label').value='';document.getElementById('ef-amt').value='';
+    if(!selGrp)selGrp=GROUPS[0].id;selExpCat=getGrp(selGrp).categories[0].id;
+    document.getElementById('ef-title').textContent='Nouvelle charge';
+    document.getElementById('ef-submit-btn').textContent='Ajouter la charge';
+  }
+  buildEfGtabs();buildEfCpills();
+  setTimeout(()=>document.getElementById('ef-label').focus(),100);
+}
+function closeExpForm(){efOpen=false;editEid=null;document.getElementById('exp-form-box').style.display='none';document.getElementById('btn-tef').textContent='+ Ajouter';document.getElementById('btn-tef').classList.remove('btn-cancel')}
+function toggleExpForm(){efOpen?closeExpForm():openExpForm()}
+function saveExp(){
+  const label=document.getElementById('ef-label').value.trim(),amount=parseFloat(document.getElementById('ef-amt').value);
+  if(!label||isNaN(amount)||amount<0){notify('Remplis les champs !');return}
+  if(editEid!==null){expenses=expenses.map(e=>e.id===editEid?{...e,label,category:selExpCat,amount}:e);notify('Charge modifiée ✓')}
+  else{expenses.push({id:nextId++,label,category:selExpCat,amount,month:selM,year:CY});notify('Charge ajoutée ✓')}
+  saveToStorage();
+  closeExpForm();renderMS();renderCharges();
+}
+function deleteExp(id){
+  if(!confirm('Supprimer cette charge ?'))return;
+  expenses=expenses.filter(e=>e.id!==id);
+  saveToStorage();notify('Supprimé ✓');
+  renderMS();renderCharges();if(curView==='dashboard')renderDash();
+}
+
+function renderCharges(){
+  const m=selM,y=CY,exps=mExp(m,y),bc=byCat(m,y),te=tExp(m,y);
+  document.getElementById('c-month').textContent=MONTHS[m];
+  document.getElementById('c-sub').textContent=exps.length+' charge'+(exps.length!==1?'s':'')+' · '+fmt(te);
+  document.getElementById('et-mname').textContent=MONTHS[m];
+  const gf=document.getElementById('gfbar');gf.innerHTML='';
+  const allB=document.createElement('button');allB.className='fbtn'+(selGrp===null?' af':'');allB.textContent='Tout · '+fmt(te);allB.onclick=()=>{selGrp=null;selCatF=null;renderCharges()};gf.appendChild(allB);
+  GROUPS.forEach(g=>{const bg2=byGrp(m,y);const b=document.createElement('button');b.className='fbtn'+(selGrp===g.id?' af':'');b.textContent=g.icon+' '+g.label;b.onclick=()=>{selGrp=g.id;selCatF=null;renderCharges()};gf.appendChild(b)});
+  const sf=document.getElementById('cfbar');sf.innerHTML='';
+  if(selGrp){
+    const grp=getGrp(selGrp);
+    const as=document.createElement('button');as.className='sfbtn'+(selCatF===null?' asf':'');as.textContent='Tous';as.onclick=()=>{selCatF=null;renderCharges()};sf.appendChild(as);
+    grp.categories.forEach(c=>{const b=document.createElement('button');b.className='sfbtn'+(selCatF===c.id?' asf':'');b.style.opacity=bc[c.id]===0?'.4':'1';b.textContent=c.icon+' '+c.label+(bc[c.id]>0?' · '+fmt(bc[c.id]):'');b.onclick=()=>{selCatF=selCatF===c.id?null:c.id;renderCharges()};sf.appendChild(b)});
+  }
+  let filtered=exps.slice().reverse();
+  if(selGrp){const g=getGrp(selGrp);filtered=filtered.filter(e=>g.categories.some(c=>c.id===e.category))}
+  if(selCatF)filtered=filtered.filter(e=>e.category===selCatF);
+  const list=document.getElementById('exp-list');list.innerHTML='';
+  if(!filtered.length){list.innerHTML='<div class="empty">Aucune charge ici 🙂</div>';document.getElementById('exp-tot').style.display='none';return}
+  filtered.forEach(e=>{
+    const c=getCat(e.category);const row=document.createElement('div');row.className='exp-row';
+    row.innerHTML=`<div class="e-blob" style="background:${c.bg}">${c.icon}</div><div style="flex:1;min-width:0"><div class="e-name">${e.label}</div><div class="e-cat">${c.label}</div></div><div class="e-amt">${fmt(e.amount)}</div><button class="btn-edit" onclick="openExpForm(${e.id});event.stopPropagation()">✏️</button><button class="btn-del" onclick="deleteExp(${e.id});event.stopPropagation()">🗑️</button>`;
+    list.appendChild(row);
+  });
+  const st=filtered.reduce((s,e)=>s+e.amount,0);document.getElementById('et-val').textContent=fmt(st);document.getElementById('exp-tot').style.display='flex';
+}
+
+// ═══════════════════════════════════════════
+//  REVENUS
+// ═══════════════════════════════════════════
+function openIncForm(){
+  ifOpen=true;
+  document.getElementById('inc-form-box').style.display='block';
+  document.getElementById('btn-tif').textContent='✕ Annuler';document.getElementById('btn-tif').classList.add('btn-cancel');
+  const cur=mInc(selM,CY)[0];
+  document.getElementById('if-amt').value=cur?cur.amount:2250;
+  setTimeout(()=>document.getElementById('if-amt').focus(),100);
+}
+function closeIncForm(){ifOpen=false;document.getElementById('inc-form-box').style.display='none';document.getElementById('btn-tif').textContent='✏️ Modifier';document.getElementById('btn-tif').classList.remove('btn-cancel')}
+function toggleIncForm(){ifOpen?closeIncForm():openIncForm()}
+function saveInc(){
+  const amount=parseFloat(document.getElementById('if-amt').value);
+  if(isNaN(amount)||amount<0){notify('Montant invalide !');return}
+  incomes=incomes.map(i=>({...i,amount}));
+  saveToStorage();notify('Salaire mis à jour ✓');
+  closeIncForm();renderRevenus();if(curView==='dashboard')renderDash();
+}
+
+function renderRevenus(){
+  const m=selM,y=CY,ti=tInc(m,y),te=tExp(m,y),bal=ti-te;
+  document.getElementById('r-month').textContent=MONTHS[m];
+  document.getElementById('r-sub').textContent='Unique source de revenus';
+  document.getElementById('rev-val').textContent=fmt(ti);
+  document.getElementById('rev-sub2').textContent=MONTHS[m]+' '+CY;
+  const sv=document.getElementById('rev-solde');
+  sv.textContent=fmt(bal);sv.style.color=bal>=0?'#166048':'#9f1239';
+  const list=document.getElementById('inc-list');list.innerHTML='';
+  mInc(m,y).forEach(i=>{
+    const row=document.createElement('div');row.className='exp-row';
+    row.innerHTML=`<div class="e-blob" style="background:var(--mint)">💼</div><div style="flex:1"><div class="e-name">Salaire</div><div class="e-cat">Revenu mensuel</div></div><div class="e-amt" style="color:#166048">${fmt(i.amount)}</div><button class="btn-edit" onclick="openIncForm();event.stopPropagation()">✏️</button>`;
+    list.appendChild(row);
+  });
+}
+
+// ═══════════════════════════════════════════
+//  HISTORIQUE
+// ═══════════════════════════════════════════
+function renderHist(){
+  document.getElementById('hist-year').textContent=CY;
+  const cv=document.getElementById('bar-canvas'),wrap=cv.parentElement;
+  cv.width=wrap.clientWidth||900;cv.height=200;
+  const ctx=cv.getContext('2d');ctx.clearRect(0,0,cv.width,cv.height);
+  const data=MSHORT.map((m,i)=>({name:m,rev:tInc(i,CY),dep:tExp(i,CY)}));
+  const pL=44,pR=10,pT=10,pB=30,cW=cv.width-pL-pR,cH=cv.height-pT-pB;
+  const maxV=Math.max(...data.map(d=>Math.max(d.rev,d.dep)),1);
+  const bW=Math.max(6,Math.floor(cW/12/2.8)),gap=Math.floor(cW/12);
+  for(let i=0;i<=4;i++){
+    const yy=pT+cH*(1-i/4);
+    ctx.beginPath();ctx.moveTo(pL,yy);ctx.lineTo(pL+cW,yy);
+    ctx.strokeStyle='rgba(28,27,34,.06)';ctx.lineWidth=1;ctx.stroke();
+    ctx.fillStyle='rgba(28,27,34,.22)';ctx.font='500 9px DM Mono,monospace';ctx.textAlign='right';
+    ctx.fillText(Math.round(maxV*i/4)+'€',pL-5,yy+3);
+  }
+  data.forEach((d,i)=>{
+    const x=pL+i*gap+gap/2,isSel=i===selM;
+    if(d.rev>0){const h=Math.round((d.rev/maxV)*cH);ctx.fillStyle=isSel?'#a8ebd3':'rgba(168,235,211,.55)';ctx.beginPath();ctx.roundRect(x-bW-2,pT+cH-h,bW,h,3);ctx.fill()}
+    if(d.dep>0){const h=Math.round((d.dep/maxV)*cH);ctx.fillStyle=isSel?'#ffb3b3':'rgba(255,179,179,.55)';ctx.beginPath();ctx.roundRect(x+2,pT+cH-h,bW,h,3);ctx.fill()}
+    ctx.fillStyle=isSel?'var(--ink)':'rgba(28,27,34,.3)';
+    ctx.font=(isSel?'700':'500')+' 10px Plus Jakarta Sans,sans-serif';
+    ctx.textAlign='center';ctx.fillText(d.name,x,pT+cH+18);
+  });
+  const grid=document.getElementById('hist-grid');grid.innerHTML='';
+  MSHORT.forEach((m,i)=>{
+    const dep=tExp(i,CY),rev=tInc(i,CY),sol=rev-dep,act=i===selM;
+    const d=document.createElement('div');d.className='hcard'+(act?' ach':'');
+    d.style.opacity=dep===0&&rev===0?'.35':'1';
+    d.innerHTML=`<div class="hm">${m}</div><div class="ha">${fmt(dep)}</div>${rev>0?`<div class="hb" style="color:${act?'rgba(255,255,255,.5)':sol>=0?'#166048':'#9f1239'}">${sol>=0?'+':''}${fmt(sol)}</div>`:''}`;
+    d.onclick=()=>{selM=i;renderMS();showView('dashboard')};
+    grid.appendChild(d);
+  });
+}
+
+// ═══════════════════════════════════════════
+//  ICÔNE PWA (générée en canvas)
+// ═══════════════════════════════════════════
+function generateIcon(){
+  const c=document.createElement('canvas');c.width=180;c.height=180;
+  const ctx=c.getContext('2d');
+  // fond dégradé
+  const g=ctx.createLinearGradient(0,0,180,180);
+  g.addColorStop(0,'#a8ebd3');g.addColorStop(1,'#c4b5fd');
+  ctx.fillStyle=g;
+  ctx.roundRect(0,0,180,180,40);ctx.fill();
+  // emoji
+  ctx.font='90px serif';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('🏡',90,96);
+  document.getElementById('pwa-icon').href=c.toDataURL('image/png');
+}
+
+// ═══════════════════════════════════════════
+//  INIT & SPLASH
+// ═══════════════════════════════════════════
+generateIcon();
+
+// Splash animation
+const fill = document.getElementById('splash-bar-fill');
+setTimeout(()=>{ fill.style.width='60%' }, 100);
+setTimeout(()=>{ fill.style.width='100%' }, 600);
+setTimeout(()=>{
+  document.getElementById('splash').classList.add('hidden');
+  setTimeout(()=>document.getElementById('splash').remove(), 500);
+}, 1200);
+
+renderMS();
+renderDash();
+</script>
+</body>
+</html>
